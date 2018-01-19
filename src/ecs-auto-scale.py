@@ -19,6 +19,11 @@ def lambda_handler(event, context):
     if asg['MaxSize'] == 0 or asg['DesiredCapacity'] == asg['MaxSize']:
         raise SystemExit()
 
+    # Are we already scaling?
+    if [instance for instance in asg['Instances']
+            if instance["LifecycleState"] == "Pending:Wait"]:
+        raise SystemExit()
+
     ecs = boto3.session.Session().client('ecs', region_name='ap-southeast-2')
     cluster = os.environ.get('ECS_CLUSTER')
     service_arns = ecs.list_services(cluster=cluster)['serviceArns']
