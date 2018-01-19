@@ -19,17 +19,27 @@ def lambda_handler(event, context):
     if asg['MaxSize'] == 0 or asg['DesiredCapacity'] == asg['MaxSize']:
         raise SystemExit()
 
-    # Are we already scaling?
+    # Are we already scaling the ASG?
     if [instance for instance in asg['Instances']
             if instance["LifecycleState"] == "Pending:Wait"]:
+        print("ASG auto scaling in progress")
         raise SystemExit()
 
     ecs = boto3.session.Session().client('ecs', region_name='ap-southeast-2')
     cluster = os.environ.get('ECS_CLUSTER')
+
+    container_instance_arns = ecs.list_container_instances(cluster=cluster)['containerInstanceArns']
+    container_instances = ecs.describe_container_instances(cluster=cluster, containerInstances=container_instances)['containerInstances']
+
+    # Has an ECS instance come online in the last five minutes?
+    if [instance for instance in container_instances
+            if instance["Status"] != "ACTIVE" or
+                datetime.datetime.now() - datetime.datetime.fromtimestamp(int(instance['registeredAt'])) < datetime.timedelta(minutes=5)]:
+        print("ECS container instance coming online")
+        raise SystemExit()
+
     service_arns = ecs.list_services(cluster=cluster)['serviceArns']
-
     services = []
-
     # describe_services has a max length of 10 services
     for chunk in chunker(service_arns, 10):
         services.extend(ecs.describe_services(cluster=cluster, services=chunk)['services'])
@@ -39,6 +49,7 @@ def lambda_handler(event, context):
             if service['runningCount'] + service['pendingCount'] < service['desiredCount']:
                 print("Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1))
                 autoscaling.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=asg['DesiredCapacity'] + 1)
+                raise SystemExit()
 
 
 if __name__ == '__main__':
