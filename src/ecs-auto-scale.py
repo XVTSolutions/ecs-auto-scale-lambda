@@ -20,13 +20,14 @@ def lambda_handler(event, context):
         raise SystemExit()
 
     ecs = boto3.session.Session().client('ecs', region_name='ap-southeast-2')
-    service_arns = ecs.list_services(cluster=os.environ.get('CLUSTER'))['serviceArns']
+    cluster = os.environ.get('ECS_CLUSTER')
+    service_arns = ecs.list_services(cluster=cluster)['serviceArns']
 
     services = []
 
     # describe_services has a max length of 10 services
     for chunk in chunker(service_arns, 10):
-        services.extend(ecs.describe_services(cluster=os.environ.get('CLUSTER'), services=chunk)['services'])
+        services.extend(ecs.describe_services(cluster=cluster, services=chunk)['services'])
 
     for service in services:
         if datetime.datetime.now(datetime.timezone.utc) - service['createdAt'] > datetime.timedelta(minutes=1):
