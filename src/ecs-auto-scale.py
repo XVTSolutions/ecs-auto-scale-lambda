@@ -50,6 +50,7 @@ def lambda_handler(event, context):
             if service['runningCount'] + service['pendingCount'] < service['desiredCount']:
                 autoscaling.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=asg['DesiredCapacity'] + 1)
                 return dict(message="Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1))
+    return dict(message="Everything is awesome, nothing to do")
 
 
 if __name__ == '__main__':
