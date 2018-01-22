@@ -12,6 +12,8 @@ def chunker(seq, size):
 
 
 def lambda_handler(event, context):
+    print(event)
+    print(context)
     autoscaling = boto3.session.Session().client('autoscaling', region_name='ap-southeast-2')
     asg_name = os.environ.get('AUTO_SCALING_GROUP')
     asg = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
