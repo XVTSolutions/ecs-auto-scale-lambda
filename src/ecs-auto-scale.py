@@ -36,7 +36,7 @@ def lambda_handler(event, context):
     # Has an ECS instance come online in the last five minutes?
     for instance in container_instances:
         if (instance["status"] != "ACTIVE" or
-                datetime.datetime.now() - instance['registeredAt'] < datetime.timedelta(minutes=5)):
+                datetime.datetime.now(datetime.timezone.utc) - instance['registeredAt'] < datetime.timedelta(minutes=5)):
             print("ECS container instance coming online")
             sys.exit(0)
 
