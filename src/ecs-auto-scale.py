@@ -53,6 +53,8 @@ def lambda_handler(event, context):
         if datetime.datetime.now(datetime.timezone.utc) - service['createdAt'] > datetime.timedelta(minutes=1):
             if service['runningCount'] + service['pendingCount'] < service['desiredCount']:
                 autoscaling.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=asg['DesiredCapacity'] + 1)
+                print(service)
+                print(asg)
                 message = "Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1)
                 print(message)
                 return dict(message=message)
