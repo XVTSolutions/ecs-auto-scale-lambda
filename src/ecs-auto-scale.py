@@ -18,12 +18,16 @@ def lambda_handler(event, context):
 
     # Are we already at capacity?
     if asg['MaxSize'] == 0 or asg['DesiredCapacity'] == asg['MaxSize']:
-        return dict(message="Already at capacity")
+        message = "Already at capacity"
+        print(message)
+        return dict(message=message)
 
     # Are we already scaling the ASG?
     if [instance for instance in asg['Instances']
             if instance["LifecycleState"] == "Pending:Wait"]:
-        return dict(message="ASG auto scaling in progress")
+        message = "ASG auto scaling in progress"
+        print(message)
+        return dict(message=message)
 
     ecs = boto3.session.Session().client('ecs', region_name='ap-southeast-2')
     cluster = os.environ.get('ECS_CLUSTER')
@@ -35,7 +39,9 @@ def lambda_handler(event, context):
     for instance in container_instances:
         if (instance["status"] != "ACTIVE" or
                 datetime.datetime.now(datetime.timezone.utc) - instance['registeredAt'] < datetime.timedelta(minutes=5)):
-            return dict(message="ECS container instance coming online")
+            message = "ECS container instance coming online"
+            print(message)
+            return dict(message=message)
 
     service_arns = ecs.list_services(cluster=cluster)['serviceArns']
     services = []
@@ -47,8 +53,12 @@ def lambda_handler(event, context):
         if datetime.datetime.now(datetime.timezone.utc) - service['createdAt'] > datetime.timedelta(minutes=1):
             if service['runningCount'] + service['pendingCount'] < service['desiredCount']:
                 autoscaling.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=asg['DesiredCapacity'] + 1)
-                return dict(message="Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1))
-    return dict(message="Everything is awesome, nothing to do")
+                message = "Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1)
+                print(message)
+                return dict(message=message)
+    message = "Everything is awesome, nothing to do"
+    print(message)
+    return dict(message=message)
 
 
 if __name__ == '__main__':
