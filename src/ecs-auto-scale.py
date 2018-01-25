@@ -35,11 +35,11 @@ def lambda_handler(event, context):
     container_instance_arns = ecs.list_container_instances(cluster=cluster)['containerInstanceArns']
     container_instances = ecs.describe_container_instances(cluster=cluster, containerInstances=container_instance_arns)['containerInstances']
 
-    # Has an ECS instance come online in the last five minutes?
+    # Are any existing ECS instances doing nothing?
     for instance in container_instances:
-        if (instance["status"] != "ACTIVE" or
-                datetime.datetime.now(datetime.timezone.utc) - instance['registeredAt'] < datetime.timedelta(minutes=5)):
-            message = "ECS container instance coming online"
+        if not instance['runningTasksCount']:
+            uptime = (datetime.datetime.now(datetime.timezone.utc) - instance['registeredAt']).seconds
+            message = "ECS container instance %s not running any tasks: uptime %d seconds" % (instance['ec2InstanceId'], uptime)
             print(message)
             return dict(message=message)
 
@@ -53,8 +53,6 @@ def lambda_handler(event, context):
         if datetime.datetime.now(datetime.timezone.utc) - service['createdAt'] > datetime.timedelta(minutes=1):
             if service['runningCount'] + service['pendingCount'] < service['desiredCount']:
                 autoscaling.set_desired_capacity(AutoScalingGroupName=asg_name, DesiredCapacity=asg['DesiredCapacity'] + 1)
-                print(service)
-                print(asg)
                 message = "Updating asg %s desired capacity to %d" % (asg_name, asg['DesiredCapacity'] + 1)
                 print(message)
                 return dict(message=message)
