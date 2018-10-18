@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 rm -f ecs_auto_scale.zip
 rm -rf build
