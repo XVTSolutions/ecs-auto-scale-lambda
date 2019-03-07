@@ -1,3 +1,4 @@
+#!groovy
 pipeline {
     environment {
         DOCKER_TLS_VERIFY=true
