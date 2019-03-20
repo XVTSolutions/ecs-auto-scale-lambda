@@ -58,8 +58,20 @@ EOF
         }//stage
 
         stage('Push artifact to S3 bucket') {
+            when {
+                expression {
+                    return ( ['jenkins', 'develop', 'master'].contains(env.BRANCH_NAME) ||
+                      env.BRANCH_NAME ==~ /release\-[\d\-\.]+/
+                    )
+                }//expression
+            }//when
+
             withAWS(credentials: 'xvt_aws') {
                 s3Upload acl: 'Private', bucket: 'xvt-public-repo', cacheControl: '', file: "ecs_auto_scale.${GIT_REVISION}.zip", metadatas: [''], path: 'pub/devops', sseAlgorithm: '', workingDir: ''
+                sh '''
+                echo "Current number artifacts stored is displayed below. If too many get there and clean it up manually"
+                aws s3 ls s3://xvt-public-repo/pub/devops | grep ecs_auto_scale
+                '''
             }//withAWS
         }//stage
 
